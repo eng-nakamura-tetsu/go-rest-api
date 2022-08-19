@@ -1,0 +1,5 @@
+make --dry-run --always-make --keep-going --print-directory
+make: Entering directory `/Users/tetsu/go/src/github.com/eng-nakamura-tetsu/go-rest-api'
+docker-compose build --no-cache
+make: Leaving directory `/Users/tetsu/go/src/github.com/eng-nakamura-tetsu/go-rest-api'
+ 
