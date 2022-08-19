@@ -19,3 +19,4 @@
 tmp
 _tools/mysql/data/
 .env
+.vscode
