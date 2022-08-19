@@ -17,3 +17,5 @@
 .DS_Store
 .go-version
 tmp
+_tools/mysql/data/
+.env
