@@ -4,11 +4,10 @@ import (
 	"net/http"
 
 	"github.com/eng-nakamura-tetsu/go-rest-api/entity"
-	"github.com/eng-nakamura-tetsu/go-rest-api/store"
 )
 
 type ListTask struct {
-	Store *store.TaskStore
+	Service ListTasksService
 }
 
 type task struct {
@@ -17,9 +16,15 @@ type task struct {
 	Status entity.TaskStatus `json:"status"`
 }
 
-func (lt *ListTask) ServerHTTP(w http.ResponseWriter, r *http.Request) {
+func (lt *ListTask) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	tasks := lt.Store.All()
+	tasks, err := lt.Service.ListTasks(ctx)
+	if err != nil {
+		RespondJSON(ctx, w, &ErrResponse{
+			Message: err.Error(),
+		}, http.StatusInternalServerError)
+		return
+	}
 	rsp := []task{}
 	for _, t := range tasks {
 		rsp = append(rsp, task{
@@ -28,5 +33,5 @@ func (lt *ListTask) ServerHTTP(w http.ResponseWriter, r *http.Request) {
 			Status: t.Status,
 		})
 	}
-	RespondJson(ctx, w, rsp, http.StatusOK)
+	RespondJSON(ctx, w, rsp, http.StatusOK)
 }

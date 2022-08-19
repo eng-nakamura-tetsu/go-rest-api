@@ -2,19 +2,18 @@ package handler
 
 import (
 	"bytes"
+	"context"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
 	"github.com/eng-nakamura-tetsu/go-rest-api/entity"
-	"github.com/eng-nakamura-tetsu/go-rest-api/store"
 	"github.com/eng-nakamura-tetsu/go-rest-api/testutil"
 	"github.com/go-playground/validator/v10"
 )
 
 func TestAddTask(t *testing.T) {
-	t.Parallel()
-
 	type want struct {
 		status  int
 		rspFile string
@@ -27,14 +26,14 @@ func TestAddTask(t *testing.T) {
 			reqFile: "testdata/add_task/ok_req.json.golden",
 			want: want{
 				status:  http.StatusOK,
-				rspFile: "testdata/add_task/ok_res.json.golden",
+				rspFile: "testdata/add_task/ok_rsp.json.golden",
 			},
 		},
 		"badRequest": {
 			reqFile: "testdata/add_task/bad_req.json.golden",
 			want: want{
 				status:  http.StatusBadRequest,
-				rspFile: "testdata/add_task/bad_res.json.golden",
+				rspFile: "testdata/add_task/bad_req_rsp.json.golden",
 			},
 		},
 	}
@@ -49,17 +48,23 @@ func TestAddTask(t *testing.T) {
 				"/tasks",
 				bytes.NewReader(testutil.LoadFile(t, tt.reqFile)),
 			)
+			moq := &AddTaskServiceMock{}
+			moq.AddTaskFunc = func(
+				ctx context.Context, title string,
+			) (*entity.Task, error) {
+				if tt.want.status == http.StatusOK {
+					return &entity.Task{ID: 1}, nil
+				}
+				return nil, errors.New("error from mock")
+			}
 
-			sut := &AddTask{
-				Store: &store.TaskStore{
-					Tasks: map[entity.TaskID]*entity.Task{},
-				},
+			sut := AddTask{
+				Service:   moq,
 				Validator: validator.New(),
 			}
-			sut.ServerHTTP(w, r)
+			sut.ServeHTTP(w, r)
 
 			resp := w.Result()
-
 			testutil.AssertResponse(t,
 				resp, tt.want.status, testutil.LoadFile(t, tt.want.rspFile),
 			)

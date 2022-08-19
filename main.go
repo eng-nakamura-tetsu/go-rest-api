@@ -5,9 +5,17 @@ import (
 	"fmt"
 	"log"
 	"net"
+	"os"
 
 	"github.com/eng-nakamura-tetsu/go-rest-api/config"
 )
+
+func main() {
+	if err := run(context.Background()); err != nil {
+		log.Printf("failed to terminated server: %v", err)
+		os.Exit(1)
+	}
+}
 
 func run(ctx context.Context) error {
 	cfg, err := config.New()
@@ -20,15 +28,11 @@ func run(ctx context.Context) error {
 	}
 	url := fmt.Sprintf("http://%s", l.Addr().String())
 	log.Printf("start with: %v", url)
-
-	mux := NewMux()
-	s := NewServer(l, mux)
-
-	return s.Run(ctx)
-}
-
-func main() {
-	if err := run(context.Background()); err != nil {
-		fmt.Printf("failed to terminate server: %v", err)
+	mux, cleanup, err := NewMux(ctx, cfg)
+	if err != nil {
+		return err
 	}
+	defer cleanup()
+	s := NewServer(l, mux)
+	return s.Run(ctx)
 }
